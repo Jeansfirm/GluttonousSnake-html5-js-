@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+
+ <head>
+  <meta charset="UTF-8">
+  <meta name="Generator" content="EditPlus®">
+  <meta name="Author" content="Jeansfirm">
+  <meta name="Keywords" content="">
+  <meta name="Description" content="">
+  <title>GluttonousSnake jf</title>
+
+  <style type="text/css">						   /*样式：CSS*/	  
+	body{background:#c7e2e7;font-family:"楷体"}    /*body 背景色*/
+	.box{
+		width:680px;
+		height:680px;
+		border: 1px blue solid;
+		margin: 0px auto;						/*外边距*/
+		box-shadow:2px 2px 5px #000;			/*边框3D阴影：黑*/
+		text-align:center;						/*文本对其:居中*/
+	}
+	h1{text-align:center;						/*标题对其：居中*/
+	   text-shadow:2px 2px 5px #000;			/*标题3D效果*/ 
+	   color:#fff;
+		}
+  </style>
+ </head>
+
+
+ <body>  
+  <!-- 游戏界面 Start-->
+  <div class="box">
+	<h1>Jeansfirm's Gluttonous Snake</h1>
+	<h2>Press Any Key To Start...</h2>
+	<!--画布：游玩界面 Start-->
+	<canvas id="mycanvas" width=450 height=450 style="background:#000"></canvas>
+	<!--画布：游玩界面  End-->
+  </div>
+  <!-- 游戏界面 End-->
+  
+  <!-- 游戏音效 -->
+  <audio src="audio/eat.mp3" id="eat"></audio>
+  <audio src="audio/bg.mp3" id="bg"></audio>
+  <audio src="audio/die.wav" id="die"></audio>
+
+  <!-- 控制脚本 -->
+  <script type="text/javascript">
+	var canvas = document.getElementById("mycanvas");
+	var ctx = canvas.getContext("2d");
+	var speed = 300;
+	var snake = [];	
+	var width=15;
+	var height=15;
+	var head;
+	var food
+	var isPlaying=0;
+
+	/*函数定义*/
+	function paintGameGrids()						//画出游戏初始网格：可忽略
+	{
+		for(var i=0;i<30;i++)						//画布450*450，以15px为单元格长度，每行梅列各有30个单元格
+		{
+			ctx.strokeStyle="white";
+			ctx.beginPath();
+			ctx.moveTo(0,i*15);
+			ctx.lineTo(450,i*15);
+			ctx.closePath();
+			ctx.stroke();
+		}
+		for(var i=0;i<30;i++)
+		{
+			ctx.beginPath();
+			ctx.moveTo(i*15,0);
+			ctx.lineTo(i*15,450);
+			ctx.closePath();
+			ctx.stroke();
+		}
+	}	
+	function Cell(x,y,d)							//蛇身单元
+	{
+		this.x=x;
+		this.y=y;
+		this.d=d;									//d 方向： 1 上 -1 下 2 左 -2 右
+	}
+	function Food(x,y)								//食物
+	{
+		this.x=x;
+		this.y=y;
+	}	
+	function initGame()
+	{
+		for(var i=0;i<5;i++)						//初始化蛇身
+		{
+			snake[i] = new Cell(i,0,-2);
+		}	
+		head=snake[snake.length-1];
+		food=new Food(15,15);						//产生第一个食物
+
+		drawSnake();
+		drawFood();
+	}	
+	function createFood()
+	{
+		var x=Math.ceil(Math.random()*28)+1;
+		var y=Math.ceil(Math.random()*28)+1;
+		food.x=x;
+		food.y=y;
+		for(var i=0;i<snake.length;i++)
+		{
+			if(snake[i].x==x && snake[i].y==y)
+				createFood();
+		}
+	}
+	function isGameOver()
+	{
+		if(head.x>=30||head.x<0||head.y<0||head.y>=30)
+		{
+			document.getElementById("die").play();
+			document.getElementById("bg").pause();
+			alert("Game Over!");
+			window.location.reload();
+		}
+		for(var i=0;i<snake.length-1;i++)
+		{
+			if(snake[i].x==head.x&&snake[i].y==head.y)
+			{
+				document.getElementById("die").play();
+				document.getElementById("bg").pause();
+				alert("Game Over!");
+				window.location.reload();
+			}
+		}
+	}
+	function drawSnake(){		
+		if(head.x==food.x&&head.y==food.y)
+		{
+			document.getElementById("eat").play();
+			var newCell=new Cell(head.x,head.y,head.d);
+			switch(newCell.d)
+			{
+				case 1: newCell.y--; break;
+				case 2: newCell.x--; break;
+				case -1: newCell.y++; break;
+				case -2: newCell.x++; break;
+			}
+			snake[snake.length]=newCell;
+			head=snake[snake.length-1];
+			createFood();
+		}
+
+		for(var i=0;i<snake.length;i++)
+		{
+			ctx.fillStyle="green";					//蛇身：绿
+			if(i==snake.length-1)
+			{
+				ctx.fillStyle="red";				//蛇头：红
+			}		
+			ctx.beginPath();
+			ctx.rect(snake[i].x*15,snake[i].y*15,width,height);
+			ctx.closePath();
+			ctx.fill();
+		}		
+	}
+	function drawFood(){
+		ctx.fillStyle="yellow";			
+		ctx.beginPath();
+		ctx.rect(food.x*15,food.y*15,width,height);
+		ctx.closePath();
+		ctx.fill();		
+	}
+	function moveSnake(direction)
+	{
+		ctx.clearRect(0,0,450,450);					//清空游玩界面内容：蛇身、食物
+		var newCell=new Cell(head.x,head.y,direction);
+		var newSnake=[];
+		for(var i=1;i<snake.length;i++)
+		{
+			newSnake[i-1]=snake[i];
+		}
+		newCell.d=direction;
+		switch(direction)
+		{
+			case 1: newCell.y--; break;
+			case 2: newCell.x--; break;
+			case -1: newCell.y++; break;
+			case -2: newCell.x++; break;
+		}
+		newSnake[snake.length-1]=newCell
+		head=newCell;
+		snake=newSnake;
+		isGameOver();
+		drawSnake();
+		drawFood();
+	}
+	function autoMove()
+	{
+		moveSnake(head.d);
+		setTimeout("autoMove()",speed);
+	}
+
+
+	/* 游戏进程 */
+	document.getElementById("bg").play();
+	paintGameGrids();						//画出游戏网格单元
+	initGame();	
+
+	document.onkeydown=function(e){
+		var code=e.keyCode;
+		var direction=0;
+		if(isPlaying==0)
+		{
+			isPlaying=1;
+			autoMove();
+		}
+		switch(code)
+		{
+			case 37:direction=2;break;
+			case 38:direction=1;break;
+			case 39:direction=-2;break;
+			case 40:direction=-1;break;
+		}
+		if(direction!=0&&(head.d+direction)!=0)
+		{
+			moveSnake(direction);
+		}
+	}
+
+  </script>
+ </body>
+</html>
